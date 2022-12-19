@@ -62,14 +62,14 @@ public class LegyverLicenseDataPlugin implements Plugin<Project> {
         }
     }
 
-    private static int validateInput(Project project, Property<String> targetFileProperty, ListProperty<String> v2LicenseData) {
+    private static int validateInput(Project project, LegyverLicenseDataPluginExtension extension) {
         int version = -1;
-        if (!targetFileProperty.isPresent()) {
+        if (!extension.getTargetFile().isPresent()) {
             logger.warn("Skipping project {} as no targetFile is defined", project);
             return -1;
         }
 
-        if (v2LicenseData.isPresent() && !v2LicenseData.get().isEmpty()) {
+        if (extension.getApplyV2LicenseDataForModules().isPresent() && !extension.getApplyV2LicenseDataForModules().get().isEmpty()) {
             version = 2;
         } else {
             logger.warn("No v2 license data modules supplied");
@@ -78,22 +78,13 @@ public class LegyverLicenseDataPlugin implements Plugin<Project> {
     }
 
     private void addLicenseData(Project project, LegyverLicenseDataPluginExtension extension) {
-        Property<String> targetFileProperty = extension.getTargetFile();
-        ListProperty<String> v2LicenseData = extension.getApplyV2LicenseDataForModules();
-
-        Integer version = validateInput(project, targetFileProperty, v2LicenseData);
+        Integer version = validateInput(project, extension);
         if (version > 0) {
-            logger.debug("Processing v{} license data", version);
-            String targetFile = targetFileProperty.get();
-            logger.debug("target file: {}", targetFile);
-            List<String> licenseData = v2LicenseData.get();
-            if (logger.isDebugEnabled()) {
-                String collected = licenseData.stream().collect(Collectors.joining(", "));
-                logger.debug("Licenses to add: {}", collected);
-            }
+            String targetFile = extension.getTargetFile().get();
+            logger.debug("Processing v{} license data for target file: {}", version, targetFile);
 
             PropertyList licenseProperties = new PropertyList();
-            for (String moduleName : licenseData) {
+            for (String moduleName : getLicenseData(extension, version)) {
                 mergeLicenseData(licenseProperties, moduleName, version);
             }
 
@@ -113,6 +104,21 @@ public class LegyverLicenseDataPlugin implements Plugin<Project> {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private List<String> getLicenseData(LegyverLicenseDataPluginExtension extension, Integer version) {
+        List<String> licenseData;
+        if (version == 2) {
+            licenseData = extension.getApplyV2LicenseDataForModules().get();
+        } else {
+            throw new RuntimeException("Unknown version: " + version);
+        }
+
+        if (logger.isDebugEnabled()) {
+            String collected = licenseData.stream().collect(Collectors.joining(", "));
+            logger.debug("Licenses to add: {}", collected);
+        }
+        return licenseData;
     }
 
     private PropertyList getModuleProperties(String moduleName, Integer version) {
