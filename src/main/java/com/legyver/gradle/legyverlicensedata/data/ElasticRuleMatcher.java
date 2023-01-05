@@ -40,6 +40,7 @@ public class ElasticRuleMatcher {
                     .collect(Collectors.toList());
             for (String key : possibleKeys) {
                 String rule = mappingProperties.getProperty(key);
+                //add the rule if it applies
                 Pattern pattern = Pattern.compile(rule);
                 Matcher matcher = pattern.matcher(moduleName);
                 if (matcher.matches() && !matchingRules.contains(key)) {
