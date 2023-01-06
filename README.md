@@ -27,5 +27,9 @@ legyverLicenseData {
 }
 ```
 
+```console
+:$ gradlew license
+```
+
 ## Best practices
 - Only declare license data for modules you explicitly define in your dependencies.  Transitive library dependencies should be communicated by transitivity.  Otherwise, this quickly becomes unmanageable.
